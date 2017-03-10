@@ -1,0 +1,87 @@
+Heuristics:
+1. Minimum Remaining Values (MRV): Choose the variable with the fewest "legal" values.
+	Purpose: This gives a way for the AI to pick the next open slot on the sudoku board.
+
+	Goal: To find an open slot on the sudoku board with the fewest legal values 
+
+2. Degree (D):  Reduces the branching factor on future choices by selecting the variable
+that is involved in the largest number of constraints on other unassigned variables.
+	Purpose: Used to break ties if there is a scenario where there is more than
+		one open slot on the sudoku board with equal MRVs.
+
+3. Least Constraining Value (LCV): Rules out the fewest choices for the neighboring variables in the
+	constraint graph.
+	Purpose: picks a value for the open slot of the sudoku board that minimizes the number of
+	 constrained values its neighboring open slots will have to select from.
+	Attempts to provide the maximum flexibility for subsequent variable assignments.
+	
+	How does this apply: it enables the neighboring open slots of the sudoku board to have
+	as many legal values it can choose from in the future.
+	
+	Question: In Sudoku, are slots on the sudoku board that are in either the same row or column
+		considered to be neighbors of the open slot? 
+		Neighbors are one slot adjacent from the open slot? (Do we count diagonals as one slot adjacent?).
+
+Inference:
+4. Forward Checking: 
+	Dubbed as forward thinking ("try to predict what would happen without the need of doing all the work again!")
+	Purpose: Can be used as a mechanism to reduce the number of backtracks on the sudoku board
+	What it does: for each unassigned variable Y that is connected to X by a constraint,
+	delete from Y's domain any value that is inconsistent with the value chosen for X
+
+	What does this mean in english? When a sudoku solver picks a random open spot and a number
+	for that open spot, remove the possible choices its neighbors (who have open slots). will have when the solver 
+	will decide in the future what numbers it can pick from those slots.
+
+Convert from board coordinates to block coordinates.
+inputs: M is the number of cells that will be given values. (initial values randomized).
+	N is the size of the NxN grid / also interpretted as number of pxq blocks made.
+	P = number of rows in each block
+	Q = number of cols in each block
+
+selected_block: (Map)
+	(row,col) associated with a value
+
+ConvertToBlockCoordinates:
+	block_row = selected_row % P;
+	block_col = selected_col % Q;
+
+1st thing we have to do is to determine whether or not the sudoku board is solvable
+	(Criteria for Completeness)
+
+Constraints:
+	open_slot = board[selected_row][selected_column]
+1.	row_constraint.
+	foreach column in the sudoku board of the selected row:
+		remove the value that is used in the same row from the selected slot's domain.
+		or constraint_set.add(value);
+2.	column_constraint.
+	foreach row in the sudoku board of the selected column:	
+		remove the value that is used in the same column from the selected slot's domain.
+		or contstraint_set.add(value);
+3.	block_constraint.
+	p =  number of rows along sudoku board / number of blocks along a row i.e. 4 / 2 = 2
+	q = number of columns along sudoku board / number of blocks along a column i.e. 4 / 2 = 2
+		
+	a. convert selected slot to block coordinates
+		i  if selected block coordinates is not the top left corner of the block (slot board coords != (0,0))
+			Find the top left corner of selected block based on the given coordinates of the selected block.
+			top_left_coords = (top_left_row,top_left_col);
+		ii. else
+			top_left_coords = (selected_row,selected_col);
+	Now we can loop!
+	for(int row = top_left_coords.row; row % P != 0; ++row)
+	{
+		for(int col = top_left_coords.col; col % Q != 0; ++col)
+		{
+			if(row == selected_row && col == selected_col)
+				continue;
+			if(board[row][col] == empty)//can use the if to satisfy both the condition that the slot is empty and the condition that the slot chosen is the same slot as the selected slot.
+				continue;
+			
+			constraint_set.add(board[row][col]);
+			//or remove board[row][col] from selected slot's domain.
+		}
+	}
+
+naked doubles/triples
