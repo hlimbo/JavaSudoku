@@ -20,7 +20,7 @@ public class SudokuFileExample {
 		System.out.println("*****************************************");
 		System.out.println(generatedSudokuFile);
 
-		SudokuFile SudokuFileFromFile = SudokuBoardReader.readFile("ExampleSudokuFiles/PH5.txt");
+		SudokuFile SudokuFileFromFile = SudokuBoardReader.readFile("ExampleSudokuFiles/PE1.txt");
 		
 		System.out.println("*****************************************");
 		System.out.println("below is a SudokuFile generated from a file:");

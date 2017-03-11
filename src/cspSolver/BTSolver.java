@@ -219,7 +219,16 @@ public class BTSolver implements Runnable{
 	 */
 	private Variable getMRV()
 	{
-		return null;
+		List<Variable> listOfVariables = this.network.getVariables();
+		Variable minimum = null;
+		for(Variable v: listOfVariables){
+			if(v.isAssigned()) 
+				continue;
+			if(minimum == null || v.getDomain().size() < minimum.getDomain().size()){
+				minimum = v;
+			}
+		}
+		return minimum;
 	}
 	
 	/**
@@ -228,7 +237,40 @@ public class BTSolver implements Runnable{
 	 */
 	private Variable getDegree()
 	{
-		return null;
+		Variable returnValue = null;
+		List<Variable> listOfVariables = this.network.getVariables();
+		for(Variable v: listOfVariables){
+			if(!v.isAssigned()){
+				returnValue = v;
+			}
+		}
+		
+		if(returnValue == null){
+			return null;
+		}
+		
+		for(Variable v: listOfVariables){
+			if(!v.isAssigned()){
+				List<Variable> neighbors = this.network.getNeighborsOfVariable(v);
+				int unassignedCount = 0;
+				//this gives us the size of the neighbors of v which are all unassigned
+				for(Variable v2: neighbors){
+					if(!v2.isAssigned())
+						++unassignedCount;
+				}
+				
+				List<Variable> neighborsOfReturnValue = this.network.getNeighborsOfVariable(returnValue);
+				int returnValueNeighborUnassignedCount = 0;
+				for(Variable v2: neighborsOfReturnValue){
+					if(!v2.isAssigned())
+						++returnValueNeighborUnassignedCount;
+				}
+				if(unassignedCount > returnValueNeighborUnassignedCount){
+					returnValue = v;
+				}
+			}
+		}
+		return returnValue;
 	}
 	
 	/**
