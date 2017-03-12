@@ -1,4 +1,5 @@
 package cspSolver;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -162,10 +163,42 @@ public class BTSolver implements Runnable{
 	
 	/**
 	 * TODO: Implement forward checking. 
+	 * returns false if an unassigned variable in the network's domain is reduced to 0.
+	 * otherwise return true
 	 */
 	private boolean forwardChecking()
 	{
-		return false;
+	   List<Variable> assignedVariables = new ArrayList<Variable>();
+		
+		for(Variable v : network.getVariables())
+		{
+			if(v.isAssigned())
+			{
+				assignedVariables.add(v);
+			}
+		}
+		
+		for(Variable assignedVariable : assignedVariables)
+		{
+			List<Variable> assignedVariableNeighbors = this.network.getNeighborsOfVariable(assignedVariable);
+			for(Variable neighbor : assignedVariableNeighbors)
+			{
+				//variables are inconsistent and must backtrack
+				if(neighbor.isAssigned() && neighbor.getAssignment() == assignedVariable.getAssignment())
+				{
+					return false;
+				}
+				
+				//reduce the neighbor's domain by 1.
+				if(neighbor.getDomain().contains(assignedVariable.getAssignment()))
+				{
+					neighbor.removeValueFromDomain(assignedVariable.getAssignment());					
+				}
+								
+			}
+		}
+		
+		return true;
 	}
 	
 	/**
