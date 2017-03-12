@@ -2,10 +2,13 @@ package cspSolver;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import sudoku.Converter;
 import sudoku.SudokuFile;
+import sun.awt.SunHints.Value;
 /**
  * Backtracking solver. 
  *
@@ -180,6 +183,7 @@ public class BTSolver implements Runnable{
 		
 		for(Variable assignedVariable : assignedVariables)
 		{
+			
 			List<Variable> assignedVariableNeighbors = this.network.getNeighborsOfVariable(assignedVariable);
 			for(Variable neighbor : assignedVariableNeighbors)
 			{
@@ -348,10 +352,47 @@ public class BTSolver implements Runnable{
 	
 	/**
 	 * TODO: LCV heuristic
+	 * obtain integer values from variable from least constraining to most constraining ~ WIP
 	 */
 	public List<Integer> getValuesLCVOrder(Variable v)
 	{
-		return null;
+		
+		List<Variable> neighbors = this.network.getNeighborsOfVariable(v);
+		List<Integer> values = v.getDomain().getValues();
+		
+		//the sum of all variable.getDomain().size() for each neighbor.
+		List<Integer> domainSums = new ArrayList<Integer>();
+		
+		for(int i = 0;i < v.getDomain().getValues().size(); ++i)
+		{	
+			Integer newSum = 0;
+			for(Variable neighbor : neighbors)
+			{
+				if(neighbor.getDomain().contains(v.Values().get(i)))
+				{
+					newSum += neighbor.getDomain().size() - 1;
+				}
+				else
+				{
+					newSum += neighbor.getDomain().size();
+				}
+			}
+			
+			domainSums.set(i, newSum);
+		}
+		
+		//sort v.Values() by lowest domainSum to highest domainSum of all neighbors
+		
+		//key - variable value in domain
+		//value - domainSum of all neighbors
+		HashMap<Integer,Integer> variableDomainMap = new HashMap<Integer,Integer>();
+		for(int i = 0;i < values.size();++i)
+		{
+			variableDomainMap.put(values.get(i), domainSums.get(i));
+		}
+		
+		
+		return values;
 	}
 	/**
 	 * Called when solver finds a solution
