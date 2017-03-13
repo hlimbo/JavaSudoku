@@ -32,10 +32,12 @@ public class BTSolver implements Runnable{
 	public enum VariableSelectionHeuristic 	{ None, MinimumRemainingValue, Degree };
 	public enum ValueSelectionHeuristic 		{ None, LeastConstrainingValue };
 	public enum ConsistencyCheck				{ None, ForwardChecking, ArcConsistency };
+	public enum NakedCheck    { None, NakedPairs, NakedTriples };
 	
 	private VariableSelectionHeuristic varHeuristics;
 	private ValueSelectionHeuristic valHeuristics;
 	private ConsistencyCheck cChecks;
+	 private NakedCheck nCheck;
 	//===============================================================================
 	// Constructors
 	//===============================================================================
@@ -66,6 +68,12 @@ public class BTSolver implements Runnable{
 	{
 		this.cChecks = cc;
 	}
+	
+
+    public void setNakedConsistency(NakedCheck nck)
+    {
+            this.nCheck = nck;
+    }
 	//===============================================================================
 	// Accessors
 	//===============================================================================
@@ -143,6 +151,28 @@ public class BTSolver implements Runnable{
 	}
 	
 	/**
+	 * Checks whether the changes from the last time this method was called are consistent. 
+	 * @return true if consistent, false otherwise
+	 */
+	private boolean checkNakedConsistency()
+	{
+		boolean isConsistent = false;
+		switch(nCheck)
+		{
+			case None: 				isConsistent = true;
+			break;
+	        case NakedPairs:    isConsistent = nakedPairs();
+	        break;
+	        case NakedTriples:    isConsistent = nakedTriples();
+	        break;
+			default: 				isConsistent = true;
+			break;
+		}
+		return isConsistent;
+	}
+	
+	
+	/**
 	 * default consistency check. Ensures no two variables are assigned to the same value.
 	 * @return true if consistent, false otherwise. 
 	 */
@@ -212,6 +242,24 @@ public class BTSolver implements Runnable{
 	{
 		return false;
 	}
+	
+	
+	/**
+	 * TODO: Implement naked pairs. 
+	 */
+	private boolean nakedPairs()
+	{
+		return false;
+	}
+	
+	/**
+	 * TODO: Implement naked triples.
+	 */
+	private boolean nakedTriples()
+	{
+		return false;
+	}
+	
 	
 	/**
 	 * Selects the next variable to check.
@@ -466,7 +514,7 @@ public class BTSolver implements Runnable{
 				//check a value
 				v.updateDomain(new Domain(i));
 				numAssignments++;
-				boolean isConsistent = checkConsistency();
+				boolean isConsistent = checkConsistency() && checkNakedConsistency();
 				
 				//move to the next assignment
 				if(isConsistent)

@@ -4,6 +4,7 @@ import cspSolver.BTSolver;
 import cspSolver.BTSolver.ConsistencyCheck;
 import cspSolver.BTSolver.ValueSelectionHeuristic;
 import cspSolver.BTSolver.VariableSelectionHeuristic;
+import cspSolver.BTSolver.NakedCheck;
 import sudoku.SudokuBoardGenerator;
 import sudoku.SudokuBoardReader;
 import sudoku.SudokuFile;
@@ -24,6 +25,7 @@ public class BTSolverExample {
 		solver.setConsistencyChecks(ConsistencyCheck.ForwardChecking);
 		solver.setValueSelectionHeuristic(ValueSelectionHeuristic.None);
 		solver.setVariableSelectionHeuristic(VariableSelectionHeuristic.MinimumRemainingValue);
+		solver.setNakedConsistency(NakedCheck.None);
 		
 		Thread t1 = new Thread(solver);
 		try
