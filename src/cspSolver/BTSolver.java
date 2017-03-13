@@ -452,8 +452,16 @@ public class BTSolver implements Runnable{
 //			System.out.println("Value: " + entry.getKey() + ", Domain Size: " + entry.getValue());
 //		}
 		
+		//put back sorted values by total neighboring domain sizes in descending order.
+		List<Integer> sortedValuesByDomainSize = new ArrayList<Integer>();
+		valueDomainPairsMap = MapUtil.sortByValue(valueDomainPairsMap);
+		for(Map.Entry<Integer,Integer> entry : valueDomainPairsMap.entrySet())
+		{	
+			//System.out.println("Value: " + entry.getKey() + ", Domain Size: " + entry.getValue());
+			sortedValuesByDomainSize.add(entry.getKey());
+		}
 		
-		return values;
+		return sortedValuesByDomainSize;
 	}
 	/**
 	 * Called when solver finds a solution
