@@ -1,4 +1,5 @@
 package cspSolver;
+import helper.MapUtil;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -9,6 +10,7 @@ import java.util.Map;
 import sudoku.Converter;
 import sudoku.SudokuFile;
 import sun.awt.SunHints.Value;
+
 /**
  * Backtracking solver. 
  *
@@ -400,7 +402,9 @@ public class BTSolver implements Runnable{
 	
 	/**
 	 * TODO: LCV heuristic
-	 * obtain integer values from variable from least constraining to most constraining ~ WIP
+	 * obtain integer values from variable from least constraining to most constraining
+	 * Implementation: sorted by total domain size of all neighbors of the selected variable for each value available in its domain.
+	 * Probably not the best implementation...but can be improved by counting something else...
 	 */
 	public List<Integer> getValuesLCVOrder(Variable v)
 	{
@@ -426,18 +430,27 @@ public class BTSolver implements Runnable{
 				}
 			}
 			
-			domainSums.set(i, newSum);
+			domainSums.add(i, newSum);
 		}
 		
 		//sort v.Values() by lowest domainSum to highest domainSum of all neighbors
 		
-		//key - variable value in domain
-		//value - domainSum of all neighbors
-		HashMap<Integer,Integer> variableDomainMap = new HashMap<Integer,Integer>();
+		//key: value from selected variable's domain. (number that can be put on a sudoku slot).
+		//value: total domain size of all neighbors.
+		Map<Integer,Integer> valueDomainPairsMap = new HashMap<Integer,Integer>();
 		for(int i = 0;i < values.size();++i)
 		{
-			variableDomainMap.put(values.get(i), domainSums.get(i));
+			valueDomainPairsMap.put(values.get(i), domainSums.get(i));
 		}
+		
+		//test this sorting function out.
+//		valueDomainPairsMap = MapUtil.sortByValue(valueDomainPairsMap);
+//		//print
+//		System.out.println("Map sorted by values");
+//		for(Map.Entry<Integer, Integer> entry : valueDomainPairsMap.entrySet())
+//		{
+//			System.out.println("Value: " + entry.getKey() + ", Domain Size: " + entry.getValue());
+//		}
 		
 		
 		return values;

@@ -14,7 +14,7 @@ public class BTSolverExample {
 	public static void main(String[] args)
 	{
 		//SudokuFile sf = SudokuBoardGenerator.generateBoard(9, 3, 3, 12);
-		SudokuFile SudokuFileFromFile = SudokuBoardReader.readFile("ExampleSudokuFiles/PE9.txt");
+		SudokuFile SudokuFileFromFile = SudokuBoardReader.readFile("ExampleSudokuFiles/PE2.txt");
 		BTSolver solver = new BTSolver(SudokuFileFromFile);
 
 		
@@ -22,9 +22,9 @@ public class BTSolverExample {
 		System.out.println("Sudoku Problem: ");
 		System.out.println(SudokuFileFromFile);
 		
-		solver.setConsistencyChecks(ConsistencyCheck.ForwardChecking);
+		solver.setConsistencyChecks(ConsistencyCheck.None);
 		solver.setValueSelectionHeuristic(ValueSelectionHeuristic.None);
-		solver.setVariableSelectionHeuristic(VariableSelectionHeuristic.MinimumRemainingValue);
+		solver.setVariableSelectionHeuristic(VariableSelectionHeuristic.None);
 		solver.setNakedConsistency(NakedCheck.None);
 		
 		Thread t1 = new Thread(solver);
