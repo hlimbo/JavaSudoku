@@ -4,8 +4,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import sudoku.Converter;
 import sudoku.SudokuFile;
@@ -205,7 +207,7 @@ public class BTSolver implements Runnable{
 	{
 	   List<Variable> assignedVariables = new ArrayList<Variable>();
 		
-		for(Variable v : network.getVariables())
+		for(Variable v : this.network.getVariables())
 		{
 			if(v.isAssigned())
 			{
@@ -245,12 +247,141 @@ public class BTSolver implements Runnable{
 		return false;
 	}
 	
+	//inner class for pairs
+	class Pair
+	{
+		private Integer[] arr;
+		
+		public Pair()
+		{
+			arr = new Integer[2];
+		}
+		
+		public Pair(Integer firstValue,Integer secondValue)
+		{
+			this();
+			arr[0] = firstValue;
+			arr[1] = secondValue;
+		}
+		
+		public Integer getFirstValue() { return arr[0]; }
+		public Integer getSecondValue() {return arr[1]; }
+		
+		@Override
+		public String toString()
+		{
+			return "(" + this.getFirstValue() + ", " + this.getSecondValue() + ")";
+		}
+		
+		@Override
+		public boolean equals(Object o)
+		{
+			if(o == this)
+				return true;
+			if(!(o instanceof Pair))
+				return false;
+			
+			Pair other = (Pair)o;
+			boolean isEquivalent = ( other.getFirstValue().equals(this.getFirstValue()) && other.getSecondValue().equals(this.getSecondValue()) );
+			boolean isEquivalentReversed = ( other.getFirstValue().equals(this.getSecondValue()) && other.getSecondValue().equals(this.getFirstValue()) );
+			
+			if(isEquivalent || isEquivalentReversed)
+				return true;
+			
+			return false;
+		}
+		
+	}
 	
 	/**
 	 * TODO: Implement naked pairs. 
 	 */
 	private boolean nakedPairs()
 	{
+		List<Variable> variables = this.network.getVariables();
+		List<Variable> unassigned_variables = new ArrayList<Variable>();
+		
+		//unassigned_variables.size() == listOfValues.size() == listOfPossiblePairs.size()
+		
+		for(Variable variable : variables)
+		{
+			if(!variable.isAssigned())
+			{
+				unassigned_variables.add(variable);
+			}
+		}
+		
+		//holds a list of values per unassigned variable sorted in ascending order.
+		List<List<Integer>> listOfValues = new ArrayList<List<Integer>>();
+		
+		for(Variable variable : unassigned_variables)
+		{
+			listOfValues.add(this.getValuesInOrder(variable));
+		}
+		
+		System.out.println(variables.get(0).getDomain());
+		
+		//holds a list of possible pairs in a set per unassigned variable.
+		List<ArrayList<Pair>> listOfPossiblePairs = new ArrayList<ArrayList<Pair>>(); 
+		
+		//retrieve all possible combinations of pairs per unassigned_variable.
+		for(int i = 0;i < listOfValues.size();++i)
+		{
+			ArrayList<Pair> possible_pairs = new ArrayList<Pair>();
+			List<Integer> list = listOfValues.get(i);
+			
+			for(int j = 0;j  < list.size(); ++j)
+			{
+				for(int k = 0;k < list.size(); ++k)
+				{
+					Integer first = list.get(j);
+					Integer second = list.get(k);
+					
+					if(first == second)
+						continue;
+					
+					Pair candidatePair = new Pair(first,second);
+										
+					//if the possible pair already has a pair of equal values but different order, goto the next possible pair.. i.e. (1,7) and (7,1) are treated as the same.
+					if(!possible_pairs.contains(candidatePair))
+						possible_pairs.add(candidatePair);
+					
+				}
+				
+				
+			}
+			
+			listOfPossiblePairs.add(possible_pairs);
+			
+			//testing code ~ used to see if pairs added in a list are equivalent regardless of order.
+//			int count = 1;
+//			for(Pair pair : possible_pairs)
+//			{
+//				System.out.println(count + ". " + pair );
+//				++count;
+//			}
+		}
+		
+		//naked pairs implementation starts here!
+		for(int i = 0;i < unassigned_variables.size();++i)
+		{
+			List<Pair> listOfPairs = listOfPossiblePairs.get(i);
+			for(Pair pair : listOfPairs)
+			{
+				Variable unassignedVariable = unassigned_variables.get(i);
+				for(Variable neighbor : this.network.getNeighborsOfVariable(unassignedVariable))
+				{
+					ArrayList<Integer> neighborDomainValues = neighbor.getDomain().getValues();
+					if(neighborDomainValues.contains(pair.getFirstValue()) && neighborDomainValues.contains(pair.getSecondValue()))
+					{
+						
+					}
+				}
+			}
+		}
+		
+		
+		
 		return false;
 	}
 	
