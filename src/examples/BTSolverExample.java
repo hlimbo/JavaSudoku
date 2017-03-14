@@ -14,7 +14,7 @@ public class BTSolverExample {
 	public static void main(String[] args)
 	{
 		//SudokuFile sf = SudokuBoardGenerator.generateBoard(9, 3, 3, 12);
-		SudokuFile SudokuFileFromFile = SudokuBoardReader.readFile("ExampleSudokuFiles/PE3.txt");
+		SudokuFile SudokuFileFromFile = SudokuBoardReader.readFile("ExampleSudokuFiles/PM1.txt");
 		BTSolver solver = new BTSolver(SudokuFileFromFile);
 
 		

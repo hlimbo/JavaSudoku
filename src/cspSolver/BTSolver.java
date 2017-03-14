@@ -403,8 +403,8 @@ public class BTSolver implements Runnable{
 	/**
 	 * TODO: LCV heuristic
 	 * obtain integer values from variable from least constraining to most constraining
-	 * Implementation: sorted by total domain size of all neighbors of the selected variable for each value available in its domain.
-	 * Probably not the best implementation...but can be improved by counting something else...
+	 * Implementation: sorted by least conflicting values to most conflicting values.
+	 * A conflict occurs when the value chosen for a selected variable reduces its neighbors' domain size by 1.
 	 */
 	public List<Integer> getValuesLCVOrder(Variable v)
 	{
@@ -412,45 +412,42 @@ public class BTSolver implements Runnable{
 		List<Variable> neighbors = this.network.getNeighborsOfVariable(v);
 		List<Integer> values = v.getDomain().getValues();
 		
-		//the sum of all variable.getDomain().size() for each neighbor.
-		List<Integer> domainSums = new ArrayList<Integer>();
+		//only check unassigned neighbors.  ~ this seems to increase the number of assignments and backtracks by a constant factor.. Tested on PM1.txt
+//		List<Variable> unassigned_neighbors = new ArrayList<Variable>();
+//		for(Variable neighbor : neighbors)
+//		{
+//			if(!neighbor.isAssigned())
+//			{
+//				unassigned_neighbors.add(neighbor);
+//			}
+//		}
 		
-		for(int i = 0;i < v.getDomain().getValues().size(); ++i)
+		//the sum of all conflicts that occurred per value available in the selected variable's domain.
+		List<Integer> conflictSums = new ArrayList<Integer>();
+		
+		for(int i = 0;i < values.size(); ++i)
 		{	
-			Integer newSum = 0;
+			Integer numConflicts = 0;
 			for(Variable neighbor : neighbors)
 			{
 				if(neighbor.getDomain().contains(v.Values().get(i)))
 				{
-					newSum += neighbor.getDomain().size() - 1;
+					++numConflicts;
 				}
-				else
-				{
-					newSum += neighbor.getDomain().size();
-				}
+				
 			}
 			
-			domainSums.add(i, newSum);
+			conflictSums.add(i, numConflicts);
 		}
 		
-		//sort v.Values() by lowest domainSum to highest domainSum of all neighbors
-		
 		//key: value from selected variable's domain. (number that can be put on a sudoku slot).
-		//value: total domain size of all neighbors.
+		//value: number of conflicts associated with selected value from variable.
 		Map<Integer,Integer> valueDomainPairsMap = new HashMap<Integer,Integer>();
 		for(int i = 0;i < values.size();++i)
 		{
-			valueDomainPairsMap.put(values.get(i), domainSums.get(i));
+			valueDomainPairsMap.put(values.get(i), conflictSums.get(i));
 		}
 		
-		//test this sorting function out.
-//		valueDomainPairsMap = MapUtil.sortByValue(valueDomainPairsMap);
-//		//print
-//		System.out.println("Map sorted by values");
-//		for(Map.Entry<Integer, Integer> entry : valueDomainPairsMap.entrySet())
-//		{
-//			System.out.println("Value: " + entry.getKey() + ", Domain Size: " + entry.getValue());
-//		}
 		
 		//put back sorted values by total neighboring domain sizes in descending order.
 		List<Integer> sortedValuesByDomainSize = new ArrayList<Integer>();
