@@ -319,7 +319,6 @@ public class BTSolver implements Runnable{
 			listOfValues.add(this.getValuesInOrder(variable));
 		}
 		
-		System.out.println(variables.get(0).getDomain());
 		
 		//holds a list of possible pairs in a set per unassigned variable.
 		List<ArrayList<Pair>> listOfPossiblePairs = new ArrayList<ArrayList<Pair>>(); 
@@ -344,11 +343,9 @@ public class BTSolver implements Runnable{
 										
 					//if the possible pair already has a pair of equal values but different order, goto the next possible pair.. i.e. (1,7) and (7,1) are treated as the same.
 					if(!possible_pairs.contains(candidatePair))
-						possible_pairs.add(candidatePair);
-					
+						possible_pairs.add(candidatePair);				
 				}
-				
-				
+							
 			}
 			
 			listOfPossiblePairs.add(possible_pairs);
@@ -363,26 +360,100 @@ public class BTSolver implements Runnable{
 		}
 		
 		//naked pairs implementation starts here!
+		
+		//identify 2 sudoku variables where each variable shares 2 values from each variable's domain.
+		Variable selectedUnassignedVariable = null;
+		Variable selectedNeighbor = null;
+		Pair pairToMatch = null;
+		
+		boolean isPairFound = false;
 		for(int i = 0;i < unassigned_variables.size();++i)
 		{
 			List<Pair> listOfPairs = listOfPossiblePairs.get(i);
 			for(Pair pair : listOfPairs)
 			{
 				Variable unassignedVariable = unassigned_variables.get(i);
-				for(Variable neighbor : this.network.getNeighborsOfVariable(unassignedVariable))
+				List<Variable> neighborsOfUnassignedVariable = this.network.getNeighborsOfVariable(unassignedVariable);			
+				for(Variable neighbor : neighborsOfUnassignedVariable)
 				{
 					ArrayList<Integer> neighborDomainValues = neighbor.getDomain().getValues();
 					if(neighborDomainValues.contains(pair.getFirstValue()) && neighborDomainValues.contains(pair.getSecondValue()))
 					{
+						//remove all other pairs that match in the unit (row, column, or box).
+						selectedUnassignedVariable = unassignedVariable;
+						selectedNeighbor = neighbor;
+						pairToMatch = pair;
 						
+						isPairFound = true;
+						break;
 					}
 				}
+				
+				if(isPairFound)
+					break;
+			}
+			
+			if(isPairFound)
+				break;
+		}
+		
+		boolean areMatchingPairsFound = (selectedUnassignedVariable != null) && (selectedNeighbor != null) && (pairToMatch != null);
+		
+		//passes the naked consistency check since no matchingPairs were found in the search.
+		if(!areMatchingPairsFound)
+		{
+			return true;
+		}
+		else
+		{
+			for(Variable neighborOfUnassignedVariable : this.network.getNeighborsOfVariable(selectedUnassignedVariable))
+			{
+				//do not delete matching neighbor's pair values!
+				if(neighborOfUnassignedVariable.equals(selectedNeighbor))
+					continue;
+				
+				ArrayList<Integer> neighborDomainValues = neighborOfUnassignedVariable.getDomain().getValues();
+				if(neighborDomainValues.contains(pairToMatch.getFirstValue()))
+				{
+					neighborOfUnassignedVariable.removeValueFromDomain(pairToMatch.getFirstValue());
+				}
+				
+				if(neighborDomainValues.contains(pairToMatch.getSecondValue()))
+				{
+					neighborOfUnassignedVariable.removeValueFromDomain(pairToMatch.getSecondValue());
+				}
+				
+				//naked consistency check fails if a neighbor's domain is empty!
+				if(neighborDomainValues.isEmpty())
+					return false;
+			}
+			
+			for(Variable neighborOfSelectedNeighbor : this.network.getNeighborsOfVariable(selectedNeighbor))
+			{
+				//do not delete matching selected unassigned variable's pair values!
+				if(neighborOfSelectedNeighbor.equals(selectedUnassignedVariable))
+					continue;
+				
+				ArrayList<Integer> neighborDomainValues = neighborOfSelectedNeighbor.getDomain().getValues();
+				if(neighborDomainValues.contains(pairToMatch.getFirstValue()))
+				{
+					neighborOfSelectedNeighbor.removeValueFromDomain(pairToMatch.getFirstValue());
+				}
+				
+				if(neighborDomainValues.contains(pairToMatch.getSecondValue()))
+				{
+					neighborOfSelectedNeighbor.removeValueFromDomain(pairToMatch.getSecondValue());
+				}
+				
+				//naked consistency check fails if a neighbor's domain is empty!
+				if(neighborDomainValues.isEmpty())
+					return false;
 			}
 		}
 		
 		
-		
-		return false;
+		return true;
+		//return false;
 	}
 	
 	/**
