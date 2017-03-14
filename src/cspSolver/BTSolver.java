@@ -226,11 +226,16 @@ public class BTSolver implements Runnable{
 				{
 					return false;
 				}
-				
+			
 				//reduce the neighbor's domain by 1.
 				if(neighbor.getDomain().contains(assignedVariable.getAssignment()))
 				{
 					neighbor.removeValueFromDomain(assignedVariable.getAssignment());					
+				}
+				
+				if(neighbor.getDomain().isEmpty())
+				{
+					return false;
 				}
 								
 			}
@@ -247,30 +252,41 @@ public class BTSolver implements Runnable{
 		return false;
 	}
 	
-	//inner class for pairs
+	//inner class for pairs ~ used for nakedPairs()
 	class Pair
 	{
-		private Integer[] arr;
+		private Variable[] arr;
 		
 		public Pair()
 		{
-			arr = new Integer[2];
+			arr = new Variable[2];
 		}
 		
-		public Pair(Integer firstValue,Integer secondValue)
+		public Pair(Variable firstVariable,Variable secondVariable)
 		{
 			this();
-			arr[0] = firstValue;
-			arr[1] = secondValue;
+			arr[0] = firstVariable;
+			arr[1] = secondVariable;
 		}
 		
-		public Integer getFirstValue() { return arr[0]; }
-		public Integer getSecondValue() {return arr[1]; }
+		public void put(Variable firstVariable, Variable secondVariable)
+		{
+			arr[0] = firstVariable;
+			arr[1] = secondVariable;
+		}
+		
+		public Variable getFirstValue() { return arr[0]; }
+		public Variable getSecondValue() {return arr[1]; }
+		
+		public boolean isNull()
+		{
+			return arr[0] == null || arr[1] == null;
+		}
 		
 		@Override
 		public String toString()
 		{
-			return "(" + this.getFirstValue() + ", " + this.getSecondValue() + ")";
+			return "(" + this.getFirstValue().getName() + ", " + this.getSecondValue().getName() + ")";
 		}
 		
 		@Override
@@ -280,13 +296,6 @@ public class BTSolver implements Runnable{
 				return true;
 			if(!(o instanceof Pair))
 				return false;
-			
-			Pair other = (Pair)o;
-			boolean isEquivalent = ( other.getFirstValue().equals(this.getFirstValue()) && other.getSecondValue().equals(this.getSecondValue()) );
-			boolean isEquivalentReversed = ( other.getFirstValue().equals(this.getSecondValue()) && other.getSecondValue().equals(this.getFirstValue()) );
-			
-			if(isEquivalent || isEquivalentReversed)
-				return true;
 			
 			return false;
 		}
@@ -299,161 +308,97 @@ public class BTSolver implements Runnable{
 	private boolean nakedPairs()
 	{
 		List<Variable> variables = this.network.getVariables();
-		List<Variable> unassigned_variables = new ArrayList<Variable>();
-		
-		//unassigned_variables.size() == listOfValues.size() == listOfPossiblePairs.size()
-		
+		//list of variables with exactly 2 values left in its domain!
+		List<Variable> variable_2_domain_list = new ArrayList<Variable>();
+
+		//retrieve variables unassigned and variables with domain of size 2
 		for(Variable variable : variables)
 		{
-			if(!variable.isAssigned())
+			if(variable.getDomain().size() == 2)
 			{
-				unassigned_variables.add(variable);
+				variable_2_domain_list.add(variable);
 			}
 		}
 		
-		//holds a list of values per unassigned variable sorted in ascending order.
-		List<List<Integer>> listOfValues = new ArrayList<List<Integer>>();
 		
-		for(Variable variable : unassigned_variables)
-		{
-			listOfValues.add(this.getValuesInOrder(variable));
-		}
+		//find a pair of variables with a domain size of 2 where 2 of its values are equal to each other.
+		Pair variablePair = new Pair();
 		
-		
-		//holds a list of possible pairs in a set per unassigned variable.
-		List<ArrayList<Pair>> listOfPossiblePairs = new ArrayList<ArrayList<Pair>>(); 
-		
-		//retrieve all possible combinations of pairs per unassigned_variable.
-		for(int i = 0;i < listOfValues.size();++i)
-		{
-			ArrayList<Pair> possible_pairs = new ArrayList<Pair>();
-			List<Integer> list = listOfValues.get(i);
-			
-			for(int j = 0;j  < list.size(); ++j)
+		outerloop:
+		for(Variable first_variable : variable_2_domain_list)
+		{	
+			for(Variable second_variable : variable_2_domain_list)
 			{
-				for(int k = 0;k < list.size(); ++k)
+				Integer firstValue = second_variable.Values().get(0);
+				Integer secondValue = second_variable.Values().get(1);
+				if(first_variable.getDomain().contains(firstValue) && second_variable.getDomain().contains(secondValue))
 				{
-					Integer first = list.get(j);
-					Integer second = list.get(k);
-					
-					if(first == second)
-						continue;
-					
-					Pair candidatePair = new Pair(first,second);
-										
-					//if the possible pair already has a pair of equal values but different order, goto the next possible pair.. i.e. (1,7) and (7,1) are treated as the same.
-					if(!possible_pairs.contains(candidatePair))
-						possible_pairs.add(candidatePair);				
+					variablePair.put(first_variable, second_variable);
+					break outerloop;
 				}
-							
 			}
-			
-			listOfPossiblePairs.add(possible_pairs);
-			
-			//testing code ~ used to see if pairs added in a list are equivalent regardless of order.
-//			int count = 1;
-//			for(Pair pair : possible_pairs)
-//			{
-//				System.out.println(count + ". " + pair );
-//				++count;
-//			}
 		}
 		
-		//naked pairs implementation starts here!
-		
-		//identify 2 sudoku variables where each variable shares 2 values from each variable's domain.
-		Variable selectedUnassignedVariable = null;
-		Variable selectedNeighbor = null;
-		Pair pairToMatch = null;
-		
-		boolean isPairFound = false;
-		for(int i = 0;i < unassigned_variables.size();++i)
-		{
-			List<Pair> listOfPairs = listOfPossiblePairs.get(i);
-			for(Pair pair : listOfPairs)
-			{
-				Variable unassignedVariable = unassigned_variables.get(i);
-				List<Variable> neighborsOfUnassignedVariable = this.network.getNeighborsOfVariable(unassignedVariable);			
-				for(Variable neighbor : neighborsOfUnassignedVariable)
-				{
-					ArrayList<Integer> neighborDomainValues = neighbor.getDomain().getValues();
-					if(neighborDomainValues.contains(pair.getFirstValue()) && neighborDomainValues.contains(pair.getSecondValue()))
-					{
-						//remove all other pairs that match in the unit (row, column, or box).
-						selectedUnassignedVariable = unassignedVariable;
-						selectedNeighbor = neighbor;
-						pairToMatch = pair;
-						
-						isPairFound = true;
-						break;
-					}
-				}
-				
-				if(isPairFound)
-					break;
-			}
-			
-			if(isPairFound)
-				break;
-		}
-		
-		boolean areMatchingPairsFound = (selectedUnassignedVariable != null) && (selectedNeighbor != null) && (pairToMatch != null);
-		
-		//passes the naked consistency check since no matchingPairs were found in the search.
-		if(!areMatchingPairsFound)
-		{
+		//naked consistency returns true since no variable pairs were found!
+		if(variablePair.isNull())
 			return true;
-		}
-		else
+		
+		//for all other neighbors in the same unit(same row, col, or box), remove values from each neighbor's domain if neighbor contains one value or both values.
+		Integer firstValueToMatch = variablePair.getFirstValue().Values().get(0);
+		Integer secondValueToMatch = variablePair.getSecondValue().Values().get(1);
+		
+		for(Variable neighborOfFirstVariable : this.network.getNeighborsOfVariable(variablePair.getFirstValue()))
 		{
-			for(Variable neighborOfUnassignedVariable : this.network.getNeighborsOfVariable(selectedUnassignedVariable))
+			//do not delete values from matching second variable!
+			if(neighborOfFirstVariable.equals(variablePair.getSecondValue()) || neighborOfFirstVariable.isAssigned())
 			{
-				//do not delete matching neighbor's pair values!
-				if(neighborOfUnassignedVariable.equals(selectedNeighbor))
-					continue;
-				
-				ArrayList<Integer> neighborDomainValues = neighborOfUnassignedVariable.getDomain().getValues();
-				if(neighborDomainValues.contains(pairToMatch.getFirstValue()))
-				{
-					neighborOfUnassignedVariable.removeValueFromDomain(pairToMatch.getFirstValue());
-				}
-				
-				if(neighborDomainValues.contains(pairToMatch.getSecondValue()))
-				{
-					neighborOfUnassignedVariable.removeValueFromDomain(pairToMatch.getSecondValue());
-				}
-				
-				//naked consistency check fails if a neighbor's domain is empty!
-				if(neighborDomainValues.isEmpty())
-					return false;
+				continue;
 			}
 			
-			for(Variable neighborOfSelectedNeighbor : this.network.getNeighborsOfVariable(selectedNeighbor))
+			if(neighborOfFirstVariable.getDomain().contains(firstValueToMatch))
 			{
-				//do not delete matching selected unassigned variable's pair values!
-				if(neighborOfSelectedNeighbor.equals(selectedUnassignedVariable))
-					continue;
-				
-				ArrayList<Integer> neighborDomainValues = neighborOfSelectedNeighbor.getDomain().getValues();
-				if(neighborDomainValues.contains(pairToMatch.getFirstValue()))
-				{
-					neighborOfSelectedNeighbor.removeValueFromDomain(pairToMatch.getFirstValue());
-				}
-				
-				if(neighborDomainValues.contains(pairToMatch.getSecondValue()))
-				{
-					neighborOfSelectedNeighbor.removeValueFromDomain(pairToMatch.getSecondValue());
-				}
-				
-				//naked consistency check fails if a neighbor's domain is empty!
-				if(neighborDomainValues.isEmpty())
-					return false;
+				neighborOfFirstVariable.removeValueFromDomain(firstValueToMatch);
+			}
+			
+			if(neighborOfFirstVariable.getDomain().contains(secondValueToMatch))
+			{
+				neighborOfFirstVariable.removeValueFromDomain(secondValueToMatch);
+			}
+			
+			//if the domain of a neighbor is 0.. naked consistency check fails!
+			if(neighborOfFirstVariable.getDomain().isEmpty())
+			{
+				return false;
+			}
+		}
+		
+		for(Variable neighborOfSecondVariable : this.network.getNeighborsOfVariable(variablePair.getSecondValue()))
+		{
+			//do not delete values from matching first variable!
+			if(neighborOfSecondVariable.equals(variablePair.getFirstValue()) || neighborOfSecondVariable.isAssigned())
+			{
+				continue;
+			}
+			
+			if(neighborOfSecondVariable.getDomain().contains(firstValueToMatch))
+			{
+				neighborOfSecondVariable.removeValueFromDomain(firstValueToMatch);
+			}
+			
+			if(neighborOfSecondVariable.getDomain().contains(secondValueToMatch))
+			{
+				neighborOfSecondVariable.removeValueFromDomain(secondValueToMatch);
+			}
+			
+			//if the domain of a neighbor is 0.. naked consistency check fails!
+			if(neighborOfSecondVariable.getDomain().isEmpty())
+			{
+				return false;
 			}
 		}
 		
 		
 		return true;
-		//return false;
 	}
 	
 	/**
