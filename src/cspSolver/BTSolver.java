@@ -206,7 +206,9 @@ public class BTSolver implements Runnable{
 	private boolean forwardChecking()
 	{
 	   List<Variable> assignedVariables = new ArrayList<Variable>();
-		
+	   
+	   List<Variable> allVariables = this.network.getVariables();
+	   
 		for(Variable v : this.network.getVariables())
 		{
 			if(v.isAssigned())
@@ -241,7 +243,7 @@ public class BTSolver implements Runnable{
 			}
 		}
 		
-		return true;
+		return this.assignmentsCheck();
 	}
 	
 	/**
@@ -307,100 +309,122 @@ public class BTSolver implements Runnable{
 	 */
 	private boolean nakedPairs()
 	{
+		
+		//3rd attempt
 		List<Variable> variables = this.network.getVariables();
-		//list of variables with exactly 2 values left in its domain!
-		List<Variable> variable_2_domain_list = new ArrayList<Variable>();
-
-		//retrieve variables unassigned and variables with domain of size 2
+		
+		//list of variables with 2 values exactly left in its domain
+		List<Variable> variable2Domain = new ArrayList<Variable>();
+		
+		//retrieve variables with domain size of 2
 		for(Variable variable : variables)
 		{
 			if(variable.getDomain().size() == 2)
 			{
-				variable_2_domain_list.add(variable);
+				variable2Domain.add(variable);
 			}
 		}
 		
-		
-		//find a pair of variables with a domain size of 2 where 2 of its values are equal to each other.
+		//if no variable pairs were found, nakedConsistencyCheck passes
+		if(variable2Domain.isEmpty() || variable2Domain.size() == 1)
+			return true;
+	
+		//find 2 variables in the variable2Domain list that have the same exact values regardless of order.
 		Pair variablePair = new Pair();
+		Integer[] pairToMatch = new Integer[2];
 		
 		outerloop:
-		for(Variable first_variable : variable_2_domain_list)
-		{	
-			for(Variable second_variable : variable_2_domain_list)
-			{
-				Integer firstValue = second_variable.Values().get(0);
-				Integer secondValue = second_variable.Values().get(1);
-				if(first_variable.getDomain().contains(firstValue) && second_variable.getDomain().contains(secondValue))
+		for(Variable firstVariable : variable2Domain)
+		{
+			for(Variable neighbor : this.network.getNeighborsOfVariable(firstVariable))
+			{	
+				if(neighbor.getDomain().size() != 2)
+					continue;
+				
+				Integer firstValue = neighbor.getDomain().getValues().get(0);
+				Integer secondValue = neighbor.getDomain().getValues().get(1);
+				if(firstVariable.getDomain().contains(firstValue) && firstVariable.getDomain().contains(secondValue))
 				{
-					variablePair.put(first_variable, second_variable);
+					variablePair.put(firstVariable, neighbor);
+					pairToMatch[0] = firstValue;
+					pairToMatch[1] = secondValue;
 					break outerloop;
 				}
 			}
 		}
 		
-		//naked consistency returns true since no variable pairs were found!
+		//there are no matching variable pairs.. don't do anything
 		if(variablePair.isNull())
 			return true;
 		
-		//for all other neighbors in the same unit(same row, col, or box), remove values from each neighbor's domain if neighbor contains one value or both values.
-		Integer firstValueToMatch = variablePair.getFirstValue().Values().get(0);
-		Integer secondValueToMatch = variablePair.getSecondValue().Values().get(1);
+		//identify if 2 variables are on the same box, row, or col (INCLUSIVE OR.. the 2 variables matching could be in the same row and box)
+		boolean areOnSameBlock = variablePair.getFirstValue().block() == variablePair.getSecondValue().block();
+		boolean areOnSameRow = variablePair.getFirstValue().row() == variablePair.getSecondValue().row();
+		boolean areOnSameCol = variablePair.getFirstValue().col() == variablePair.getSecondValue().col();
 		
-		for(Variable neighborOfFirstVariable : this.network.getNeighborsOfVariable(variablePair.getFirstValue()))
+		//by default these values are -1 if 2 variables do not share a property checked below
+		int sharedBlock = -1;
+		int sharedRow = -1;
+		int sharedCol = -1;
+		
+		if(areOnSameBlock)
 		{
-			//do not delete values from matching second variable!
-			if(neighborOfFirstVariable.equals(variablePair.getSecondValue()) || neighborOfFirstVariable.isAssigned())
-			{
-				continue;
-			}
-			
-			if(neighborOfFirstVariable.getDomain().contains(firstValueToMatch))
-			{
-				neighborOfFirstVariable.removeValueFromDomain(firstValueToMatch);
-			}
-			
-			if(neighborOfFirstVariable.getDomain().contains(secondValueToMatch))
-			{
-				neighborOfFirstVariable.removeValueFromDomain(secondValueToMatch);
-			}
-			
-			//if the domain of a neighbor is 0.. naked consistency check fails!
-			if(neighborOfFirstVariable.getDomain().isEmpty())
-			{
-				return false;
-			}
+			sharedBlock = variablePair.getFirstValue().block();
 		}
 		
-		for(Variable neighborOfSecondVariable : this.network.getNeighborsOfVariable(variablePair.getSecondValue()))
+		if(areOnSameRow)
 		{
-			//do not delete values from matching first variable!
-			if(neighborOfSecondVariable.equals(variablePair.getFirstValue()) || neighborOfSecondVariable.isAssigned())
-			{
-				continue;
-			}
-			
-			if(neighborOfSecondVariable.getDomain().contains(firstValueToMatch))
-			{
-				neighborOfSecondVariable.removeValueFromDomain(firstValueToMatch);
-			}
-			
-			if(neighborOfSecondVariable.getDomain().contains(secondValueToMatch))
-			{
-				neighborOfSecondVariable.removeValueFromDomain(secondValueToMatch);
-			}
-			
-			//if the domain of a neighbor is 0.. naked consistency check fails!
-			if(neighborOfSecondVariable.getDomain().isEmpty())
-			{
-				return false;
-			}
+			sharedRow = variablePair.getFirstValue().row();
 		}
 		
+		if(areOnSameCol)
+		{
+			sharedCol = variablePair.getFirstValue().col();
+		}
+		
+		
+		//a unit is a box, row, or col that the variable pair share in common... where we search for when removing values from the domain.
+		Set<Variable> unit = new HashSet<Variable>();
+		
+		for(Variable candidate : this.network.getNeighborsOfVariable(variablePair.getFirstValue()))
+		{
+			if(candidate.isAssigned() || candidate == variablePair.getFirstValue() || candidate == variablePair.getSecondValue())
+				continue;
+			
+			if(areOnSameBlock && sharedBlock == candidate.block())
+				unit.add(candidate);
+			else if(areOnSameRow && sharedRow == candidate.row())
+				unit.add(candidate);
+			else if(areOnSameCol && sharedCol == candidate.col())
+				unit.add(candidate);
+		}
+		
+//		for(Variable candidate : this.network.getNeighborsOfVariable(variablePair.getSecondValue()))
+//		{
+//			if(areOnSameBlock && sharedBlock == candidate.block())
+//				unit.add(candidate);
+//			else if(areOnSameRow && sharedRow == candidate.row())
+//				unit.add(candidate);
+//			else if(areOnSameCol && sharedCol == candidate.col())
+//				unit.add(candidate);			
+//		}
+		
+		//remove values from unit if candidate's domain contains any value in variablePair
+		for(Variable candidate : unit)
+		{
+			if(candidate.getDomain().contains(pairToMatch[0]))
+				candidate.removeValueFromDomain(pairToMatch[0]);
+			
+			if(candidate.getDomain().contains(pairToMatch[1]))
+				candidate.removeValueFromDomain(pairToMatch[1]);
+			
+			if(candidate.getDomain().isEmpty())
+				return false;
+		}
 		
 		return true;
 	}
-	
+			
 	/**
 	 * TODO: Implement naked triples.
 	 */
@@ -596,7 +620,7 @@ public class BTSolver implements Runnable{
 		}
 		
 		
-		//put back sorted values by total neighboring domain sizes in descending order.
+		//put back sorted values by total neighboring domain sizes in ascending order.
 		List<Integer> sortedValuesByDomainSize = new ArrayList<Integer>();
 		valueDomainPairsMap = MapUtil.sortByValue(valueDomainPairsMap);
 		for(Map.Entry<Integer,Integer> entry : valueDomainPairsMap.entrySet())
@@ -679,10 +703,11 @@ public class BTSolver implements Runnable{
 				//check a value
 				v.updateDomain(new Domain(i));
 				numAssignments++;
-				boolean isConsistent = checkConsistency() && checkNakedConsistency();
+				boolean isConsistent = checkConsistency();
+				boolean isNakedConsistent = checkNakedConsistency();
 				
 				//move to the next assignment
-				if(isConsistent)
+				if(isConsistent && isNakedConsistent)
 				{		
 					solve(level + 1);
 				}
