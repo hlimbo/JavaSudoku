@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -251,8 +252,49 @@ public class BTSolver implements Runnable{
 	 */
 	private boolean arcConsistency()
 	{
-		return false;
+		LinkedList<Pair> queue = new LinkedList<Pair>();
+		for(Variable v: this.network.getVariables()){
+			for(Variable neighbor: this.network.getNeighborsOfVariable(v)){
+				queue.add(new Pair(v,neighbor));
+				queue.add(new Pair(neighbor,v));
+			}
+		}
+	    while(!queue.isEmpty()){
+	    	Pair p = queue.remove();
+	    	if(RemoveInconsistentValues(p.getFirstValue(),p.getSecondValue())){
+	    		if(p.getFirstValue().getDomain().isEmpty()){
+	    			return false;
+	    		}
+	    		for(Variable v: this.network.getNeighborsOfVariable(p.getFirstValue())){
+	    			if(v != p.getSecondValue()){
+	    				queue.add(new Pair(v,p.getFirstValue()));
+	    			}
+	    		}
+	    	}
+	    }
+	    
+	    return true;
 	}
+	
+	private boolean RemoveInconsistentValues(Variable first, Variable second){
+		boolean removed = false;
+		if( first.getDomain().isEmpty() || second.getDomain().isEmpty())
+			return false;
+		List<Integer> valuesInDomainToRemove = new ArrayList<Integer>();
+		for(Integer i : first.getDomain().getValues()){
+			if(second.getDomain().contains(i)){
+				valuesInDomainToRemove.add(i);
+				removed = true;
+			}
+		}
+		for(Integer i: valuesInDomainToRemove){
+			first.removeValueFromDomain(i);
+		}
+		
+		
+		return removed;
+	}
+	
 	
 	//inner class for pairs ~ used for nakedPairs()
 	class Pair
@@ -428,9 +470,93 @@ public class BTSolver implements Runnable{
 	/**
 	 * TODO: Implement naked triples.
 	 */
+	
+	class Triple
+	{
+		private Variable[] arr;
+		
+		public Triple()
+		{
+			arr = new Variable[3];
+		}
+		
+		public Triple(Variable firstVariable,Variable secondVariable, Variable thirdVariable)
+		{
+			this();
+			arr[0] = firstVariable;
+			arr[1] = secondVariable;
+			arr[2] = thirdVariable;
+		}
+		
+		public void put(Variable firstVariable, Variable secondVariable, Variable thirdVariable)
+		{
+			arr[0] = firstVariable;
+			arr[1] = secondVariable;
+			arr[2] = thirdVariable;
+		}
+		
+		public Variable getFirstValue() { return arr[0]; }
+		public Variable getSecondValue() {return arr[1]; }
+		public Variable getThirdValue() {return arr[2]; }
+		
+		public boolean isNull()
+		{
+			return arr[0] == null || arr[1] == null || arr[2] == null;
+		}
+		
+		@Override
+		public String toString()
+		{
+			return "(" + this.getFirstValue().getName() + ", " + this.getSecondValue().getName() + ", "+ this.getThirdValue().getName() + ")";
+		}
+		
+		@Override
+		public boolean equals(Object o)
+		{
+			if(o == this)
+				return true;
+			if(!(o instanceof Pair))
+				return false;
+			
+			return false;
+		}
+		
+	}
+	
+	
 	private boolean nakedTriples()
 	{
+		List<Variable> variables = this.network.getVariables();
+		
+		//list of variables with 3 or 2 values left in its domain
+		List<Variable> variable3Domain = new ArrayList<Variable>();
+		
+		//retrieve variables with domain size of 2
+		for(Variable variable : variables)
+		{
+			if(variable.getDomain().size() == 3 || variable.getDomain().size() == 2)
+			{
+				variable3Domain.add(variable);
+			}
+		}
+		
+		//if no variable pairs were found, nakedConsistencyCheck passes
+		if(variable3Domain.isEmpty() || variable3Domain.size() == 1)
+			return true;
+		
+		Pair variableTriple = new Pair();
+		Integer[] tripleToMatch = new Integer[3];
+		
+		
+		
+		
+		
+		
+		
+		
 		return false;
+		
+		
 	}
 	
 	

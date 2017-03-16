@@ -22,10 +22,10 @@ public class BTSolverExample {
 //		System.out.println("Sudoku Problem: ");
 //		System.out.println(SudokuFileFromFile);
 		
-		solver.setConsistencyChecks(ConsistencyCheck.ForwardChecking);
-		solver.setValueSelectionHeuristic(ValueSelectionHeuristic.LeastConstrainingValue);
-		solver.setVariableSelectionHeuristic(VariableSelectionHeuristic.MinimumRemainingValue);
-		solver.setNakedConsistency(NakedCheck.NakedPairs);
+		solver.setConsistencyChecks(ConsistencyCheck.ArcConsistency);
+		solver.setValueSelectionHeuristic(ValueSelectionHeuristic.None);
+		solver.setVariableSelectionHeuristic(VariableSelectionHeuristic.None);
+		solver.setNakedConsistency(NakedCheck.None);
 		
 		Thread t1 = new Thread(solver);
 		try
