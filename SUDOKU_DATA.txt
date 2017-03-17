@@ -1,0 +1,150 @@
+Data Results:
+
+Default Timeout: 60,000 ms (1 minute)
+
+NO HEURISTICS USED:
+PE1.txt
+Success Rate: 100%
+Time taken:213 ms
+Number of assignments: 1605
+Number of backtracks: 1556
+
+PE2.txt
+Success Rate: 100%
+Time taken:213 ms
+Number of assignments: 1605
+Number of backtracks: 1556
+
+PE3.txt
+Success Rate: 100%
+Time taken:4935 ms
+Number of assignments: 170978
+Number of backtracks: 170925
+
+PE4.txt
+Success Rate: 100%
+Time taken:539 ms
+Number of assignments: 14948
+Number of backtracks: 14897
+
+PE5.txt
+Success Rate: 100%
+Time taken:68 ms
+Number of assignments: 505
+Number of backtracks: 460
+
+PM1.txt
+Failed to find a solution.
+
+PM2.txt
+Failed to find a solution.
+
+PM3.txt
+Failed to find a solution.
+
+PM4.txt
+Failed to find a solution.
+
+PM5.txt
+Failed to find a solution.
+
+PH1.txt
+Failed to find a solution.
+
+PH2.txt
+Failed to find a solution.
+
+PH3.txt
+Failed to find a solution.
+
+PH4.txt
+Failed to find a solution.
+
+PH5.txt
+Failed to find a solution.
+
+-----------------------------------------------------------------------------------
+
+FORWARD CHECKING ONLY
+PE1.txt
+Success Rate: 100%
+Time taken:16 ms
+Number of assignments: 13
+Number of backtracks: 6
+
+PE2.txt
+Success Rate: 100%
+Time taken:21 ms
+Number of assignments: 18
+Number of backtracks: 8
+
+PE3.txt
+Success Rate: 100%
+Time taken:77 ms
+Number of assignments: 146
+Number of backtracks: 132
+
+PE4.txt
+Success Rate: 100%
+Time taken:27 ms
+Number of assignments: 28
+Number of backtracks: 13
+
+PE5.txt
+Success Rate: 100%
+Time taken:15 ms
+Number of assignments: 10
+Number of backtracks: 6
+
+PM1.txt
+Success Rate: 100%
+Time taken:1758 ms
+Number of assignments: 5727
+Number of backtracks: 5698
+
+Time taken:1755 ms
+Number of assignments: 5727
+Number of backtracks: 5698
+
+PM2.txt
+Failed to find a solution.
+
+PM3.txt
+Time taken:632 ms
+Number of assignments: 1408
+Number of backtracks: 1373
+
+PM4.txt
+Time taken:13577 ms
+Number of assignments: 37258
+Number of backtracks: 37212
+
+PM5.txt
+Time taken:2025 ms
+Number of assignments: 5476
+Number of backtracks: 5453
+
+PH1.txt
+Time taken:3844 ms
+Number of assignments: 10203
+Number of backtracks: 10035
+
+PH2.txt
+Time taken:842 ms
+Number of assignments: 1097
+Number of backtracks: 1070
+
+Time taken:862 ms
+Number of assignments: 1097
+Number of backtracks: 1070
+
+PH3.txt
+Failed to find a solution.
+
+PH4.txt
+Failed to find a solution.
+
+PH5.txt
+Failed to find a solution.
+
+
