@@ -470,6 +470,7 @@ public class BTSolver implements Runnable{
 			
 	/**
 	 * TODO: Implement naked triples.
+	 * Note: Haven't handled the 2/2/2 case in http://www.sudokuwiki.org/naked_candidates
 	 */
 	
 	class Triple
@@ -543,7 +544,7 @@ public class BTSolver implements Runnable{
 		boolean areOnSameRow = false;
 		
 		
-		//this finds a list of values with a domain size less than 3 and greater than or equal to 1.
+		//this finds a list of values with a domain size 3 or 2.
 		outerloop:
 		for(Variable tripleCandidate : tripleCandidates)
 		{
@@ -599,6 +600,9 @@ public class BTSolver implements Runnable{
 					}
 				}
 			}
+			
+			//if no naked triples were found in the inner loop clear the triple list to avoid having invalid values in the list.
+			triple.clear();
 		}
 		
 		//if no naked triples can be found, pass the consistency.
@@ -641,9 +645,10 @@ public class BTSolver implements Runnable{
 				unit.add(candidate);
 		}
 		
+		//the last index of the list holds the triple!
 		Integer[] tripletToMatch = new Integer[3];
-		tripletToMatch[0] = triple.get(0).Values().get(0);
-		tripletToMatch[1] = triple.get(1).Values().get(1);
+		tripletToMatch[0] = triple.get(2).Values().get(0);
+		tripletToMatch[1] = triple.get(2).Values().get(1);
 		tripletToMatch[2] = triple.get(2).Values().get(2);
 		//remove values from unit if candidate's domain contains any value in triple
 		for(Variable candidate : unit)
