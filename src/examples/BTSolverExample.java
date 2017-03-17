@@ -14,18 +14,15 @@ public class BTSolverExample {
 	public static void main(String[] args)
 	{
 		//SudokuFile sf = SudokuBoardGenerator.generateBoard(9, 3, 3, 12);
-		SudokuFile SudokuFileFromFile = SudokuBoardReader.readFile("ExampleSudokuFiles/PE1.txt");
+		SudokuFile SudokuFileFromFile = SudokuBoardReader.readFile("ExampleSudokuFiles/PH3.txt");
 		BTSolver solver = new BTSolver(SudokuFileFromFile);
-
 		
-		//odd bug: initial sudoku board values are being changed when the solver finishes executing
-//		System.out.println("Sudoku Problem: ");
-//		System.out.println(SudokuFileFromFile);
+		
 		
 		solver.setConsistencyChecks(ConsistencyCheck.ForwardChecking);
-		solver.setValueSelectionHeuristic(ValueSelectionHeuristic.None);
-		solver.setVariableSelectionHeuristic(VariableSelectionHeuristic.Degree);
-		solver.setNakedConsistency(NakedCheck.None);
+		solver.setValueSelectionHeuristic(ValueSelectionHeuristic.LeastConstrainingValue);
+		solver.setVariableSelectionHeuristic(VariableSelectionHeuristic.MinimumRemainingValue);
+		solver.setNakedConsistency(NakedCheck.NakedTriples);
 		
 		Thread t1 = new Thread(solver);
 		try

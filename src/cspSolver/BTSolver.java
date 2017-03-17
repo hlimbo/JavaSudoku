@@ -471,7 +471,7 @@ public class BTSolver implements Runnable{
 			
 	/**
 	 * TODO: Implement naked triples.
-	 * Note: Haven't handled the 2/2/2 case in http://www.sudokuwiki.org/naked_candidates
+	 * 
 	 */
 	
 	class Triple
@@ -606,7 +606,121 @@ public class BTSolver implements Runnable{
 			triple.clear();
 		}
 		
-		//if no naked triples can be found, pass the consistency.
+		//used for 2/2/2 case.
+		Set<Integer> union = new HashSet<Integer>();
+		//handle 2/2/2 case
+		if(triple.size() < 3)
+		{
+			//remove previous values stored from previous search to avoid invalid naked triple from forming.
+			triple.clear();
+			
+			//find all variables in the network with domain size = 2.
+			List<Variable> doubleCandidates = new ArrayList<Variable>();
+			for(Variable candidate : this.network.getVariables())
+			{
+				if(candidate.getDomain().size() == 2)
+				{
+					doubleCandidates.add(candidate);
+				}
+			}
+			
+			//search for a naked triple with 2/2/2 where the union of all 3 variables domain size sum to 3.
+			outerloop:
+			for(Variable doubleCandidate : doubleCandidates)
+			{
+				for(Variable other : doubleCandidates)
+				{
+					if(doubleCandidate == other)
+						continue;
+					
+					if(this.areNeighbors(doubleCandidate, other))
+					{
+						Integer firstValue = doubleCandidate.Values().get(0);
+						Integer secondValue = doubleCandidate.Values().get(1);
+
+						if(other.getDomain().contains(firstValue) || other.getDomain().contains(secondValue))
+						{			
+							triple.add(other);
+							if(triple.size() == 2)
+							{
+								triple.add(doubleCandidate);
+								
+								Variable firstVariable = triple.get(0);
+								Variable secondVariable = triple.get(1);
+								Variable thirdVariable = triple.get(2);
+								
+								areOnSameBox = firstVariable.block() == secondVariable.block() && secondVariable.block() == thirdVariable.block();
+								areOnSameRow =  firstVariable.row() == secondVariable.row() && secondVariable.row() == thirdVariable.row();
+								areOnSameCol =  firstVariable.col() == secondVariable.col() && secondVariable.col() == thirdVariable.col();
+								
+								//if potential naked triple is not found on the same unit, goto the next double candidate.
+								if(!areOnSameBox && ! areOnSameRow && ! areOnSameCol)
+									break;
+																
+								//is a valid naked triple if the 3 variable's values joined in a union has a size of 3.
+								for(Variable t : triple)
+									union.addAll(t.Values());
+								
+								if(union.size() == 3)
+								{
+									break outerloop;//valid naked triple is found
+								}
+								else
+								{
+									union.clear();
+									break; //inner loop ~ continue the search
+								}
+																
+							}
+						}						
+						else if(triple.size() == 1)//if there is one other value in the triple
+						{
+							Integer t_firstValue = triple.get(0).Values().get(0);
+							Integer t_secondValue = triple.get(0).Values().get(1);
+							
+							if(other.getDomain().contains(t_firstValue) || other.getDomain().contains(t_secondValue))
+							{
+								triple.add(other);
+								
+								//the size of the list becomes 2 so we don't have to check for that here.
+								triple.add(doubleCandidate);
+								
+								Variable firstVariable = triple.get(0);
+								Variable secondVariable = triple.get(1);
+								Variable thirdVariable = triple.get(2);
+								
+								areOnSameBox = firstVariable.block() == secondVariable.block() && secondVariable.block() == thirdVariable.block();
+								areOnSameRow =  firstVariable.row() == secondVariable.row() && secondVariable.row() == thirdVariable.row();
+								areOnSameCol =  firstVariable.col() == secondVariable.col() && secondVariable.col() == thirdVariable.col();
+								
+								//if potential naked triple is not found on the same unit, goto the next double candidate.
+								if(!areOnSameBox && ! areOnSameRow && ! areOnSameCol)
+									break;
+																
+								//is a valid naked triple if the 3 variable's values joined in a union has a size of 3.
+								for(Variable t : triple)
+									union.addAll(t.Values());
+								
+								if(union.size() == 3)
+									break outerloop;//valid naked triple is found
+								else
+								{
+									union.clear();
+									break; //inner loop ~ continue the search
+								}
+								
+							}
+										
+						}
+					}
+						
+				}
+				
+				triple.clear();
+			}
+		}
+		
+		//if no naked triples can be found for 3/3/3, 3/3/2, 3/2/2, or 2/2/2 case , pass the consistency.
 		if(triple.size() < 3)
 			return true;
 		
@@ -630,6 +744,24 @@ public class BTSolver implements Runnable{
 			sharedCol = triple.get(0).col();
 		}
 		
+		//the last index of the list holds the triple!
+		Integer[] tripletToMatch = new Integer[3];
+		if(triple.get(2).size() == 2)
+		{
+			int i = 0;
+			for(Integer value : union)
+			{
+				tripletToMatch[i++] = value;
+			}
+		}
+		else
+		{
+			tripletToMatch[0] = triple.get(2).Values().get(0);
+			tripletToMatch[1] = triple.get(2).Values().get(1);
+			tripletToMatch[2] = triple.get(2).Values().get(2);
+		}
+		
+		
 		//a unit is a box, row, or col that the variable pair share in common... where we search for when removing values from the domain.
 		Set<Variable> unit = new HashSet<Variable>();
 		
@@ -646,11 +778,6 @@ public class BTSolver implements Runnable{
 				unit.add(candidate);
 		}
 		
-		//the last index of the list holds the triple!
-		Integer[] tripletToMatch = new Integer[3];
-		tripletToMatch[0] = triple.get(2).Values().get(0);
-		tripletToMatch[1] = triple.get(2).Values().get(1);
-		tripletToMatch[2] = triple.get(2).Values().get(2);
 		//remove values from unit if candidate's domain contains any value in triple
 		for(Variable candidate : unit)
 		{
@@ -671,6 +798,13 @@ public class BTSolver implements Runnable{
 		
 		
 		return true;		
+	}
+	
+	
+	//@returns true iff v1 and v2 are on the same row, column, or block.
+	private boolean areNeighbors(Variable v1, Variable v2)
+	{
+		return v1.row() == v2.row() || v1.col() == v2.col() || v1.block() == v2.block();
 	}
 	
 	
