@@ -22,7 +22,7 @@ public class BTSolverExample {
 //		System.out.println("Sudoku Problem: ");
 //		System.out.println(SudokuFileFromFile);
 		
-		solver.setConsistencyChecks(ConsistencyCheck.None);
+		solver.setConsistencyChecks(ConsistencyCheck.ForwardChecking);
 		solver.setValueSelectionHeuristic(ValueSelectionHeuristic.None);
 		solver.setVariableSelectionHeuristic(VariableSelectionHeuristic.Degree);
 		solver.setNakedConsistency(NakedCheck.None);

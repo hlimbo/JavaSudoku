@@ -6,6 +6,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -735,43 +736,30 @@ public class BTSolver implements Runnable{
 	private Variable getDegree()
 	{
 		List<Variable> unassignedVariables = new ArrayList<Variable>();
-		
+		Variable max = null;
+		int maxConstraintSize = -1;
 		for(Variable v: this.network.getVariables()){
 			if(!v.isAssigned()){
 				unassignedVariables.add(v);
 			}
 		}
-		
-		if(unassignedVariables.isEmpty())
-			return null;
-		
-		HashMap<Variable,Integer> map = new HashMap<Variable,Integer>();
-		for(Variable v : unassignedVariables){
-			map.put(v, 0);
-			for(Variable neighbor: this.network.getNeighborsOfVariable(v)){
-				if(!neighbor.isAssigned()){
-					map.put(v, map.get(v)+1);
+		//we have a list of every unassigned variable
+		for(Variable v: unassignedVariables){
+				//this gives us a list of constraints the variable is constrained to we need to see how many of these values are not assigned
+				Set<Variable> s = new LinkedHashSet<>();
+				List<Constraint> test = this.network.getConstraintsContainingVariable(v);
+				for(Constraint c: test){
+					List<Variable> vars = c.vars; 
+					s.addAll(vars);
 				}
-			}
-		}
-		Variable max = null;
-		Iterator it = map.entrySet().iterator();
-//		while(it.hasNext()){
-//			Map.Entry<Variable, Integer> pair = (Map.Entry<Variable, Integer>)it.next();
-//			
-//			if(max == null)
-//				max = pair.getKey();
-//			else if(pair.getValue() > map.get(max)){
-//				max = pair.getKey();
-//			}
-//			//it.remove();
-//		}
-		for(Map.Entry<Variable, Integer> entry: map.entrySet()){
-			if(max == null)
-				max = entry.getKey();
-			else if(entry.getValue() > map.get(max)){
-				max = entry.getKey();
-			}
+				//all constrained variables of v are now in the set s we now need to get rid of V from it as well as any assigned values
+				s.remove(v);
+				s.removeIf(v1->v1.isAssigned());
+				
+				if(s.size() > maxConstraintSize){
+					max = v;
+					maxConstraintSize = s.size();
+				}
 		}
 		return max;
 	}
