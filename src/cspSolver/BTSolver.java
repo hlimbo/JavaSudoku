@@ -526,37 +526,144 @@ public class BTSolver implements Runnable{
 	
 	private boolean nakedTriples()
 	{
-		List<Variable> variables = this.network.getVariables();
-		
-		//list of variables with 3 or 2 values left in its domain
-		List<Variable> variable3Domain = new ArrayList<Variable>();
-		
-		//retrieve variables with domain size of 2
-		for(Variable variable : variables)
+		List<Variable> tripleCandidates = new ArrayList<Variable>();
+		for(Variable v : this.network.getVariables())
 		{
-			if(variable.getDomain().size() == 3 || variable.getDomain().size() == 2)
+			if(v.getDomain().size() == 3)
+				tripleCandidates.add(v);
+		}
+		
+		if(tripleCandidates.isEmpty())
+			return true;
+		
+		List<Variable> triple = new ArrayList<Variable>();
+		boolean areOnSameBox = false;
+		boolean areOnSameCol = false;
+		boolean areOnSameRow = false;
+		
+		
+		//this finds a list of values with a domain size less than 3 and greater than or equal to 1.
+		outerloop:
+		for(Variable tripleCandidate : tripleCandidates)
+		{
+			for(Variable neighbor : this.network.getNeighborsOfVariable(tripleCandidate))
 			{
-				variable3Domain.add(variable);
+				if(neighbor.getDomain().size() == 2)
+				{
+					if(tripleCandidate.getDomain().contains(neighbor.Values().get(0)) && tripleCandidate.getDomain().contains(neighbor.Values().get(1)))
+					{
+						triple.add(neighbor);
+						if(triple.size() == 2)
+						{
+							triple.add(tripleCandidate);
+							
+							Variable firstVariable = triple.get(0);
+							Variable secondVariable = triple.get(1);
+							Variable thirdVariable = triple.get(2);
+							
+							areOnSameBox = firstVariable.block() == secondVariable.block() && secondVariable.block() == thirdVariable.block();
+							areOnSameCol = firstVariable.col() == secondVariable.col() && secondVariable.col() == thirdVariable.col();
+							areOnSameRow = firstVariable.row() == secondVariable.row() && secondVariable.row() == thirdVariable.row();
+							
+							if(!areOnSameBox && !areOnSameCol && !areOnSameRow)
+								triple.clear();
+							else
+								break outerloop;
+						}
+					}
+				}
+				
+				if(neighbor.getDomain().size() == 3)
+				{
+					if(tripleCandidate.getDomain().contains(neighbor.Values().get(0)) && tripleCandidate.getDomain().contains(neighbor.Values().get(1)) && tripleCandidate.getDomain().contains(neighbor.Values().get(2)))
+					{
+						triple.add(neighbor);
+						if(triple.size() == 2)
+						{
+							triple.add(tripleCandidate);
+							
+							Variable firstVariable = triple.get(0);
+							Variable secondVariable = triple.get(1);
+							Variable thirdVariable = triple.get(2);
+							
+							areOnSameBox = firstVariable.block() == secondVariable.block() && secondVariable.block() == thirdVariable.block();
+							areOnSameCol = firstVariable.col() == secondVariable.col() && secondVariable.col() == thirdVariable.col();
+							areOnSameRow = firstVariable.row() == secondVariable.row() && secondVariable.row() == thirdVariable.row();
+							
+							if(!areOnSameBox && !areOnSameCol && !areOnSameRow)
+								triple.clear();
+							else
+								break outerloop;
+						}
+					}
+				}
 			}
 		}
 		
-		//if no variable pairs were found, nakedConsistencyCheck passes
-		if(variable3Domain.isEmpty() || variable3Domain.size() == 1)
+		//if no naked triples can be found, pass the consistency.
+		if(triple.size() < 3)
 			return true;
 		
-		Pair variableTriple = new Pair();
-		Integer[] tripleToMatch = new Integer[3];
+		//by default these values are -1 if 3 variables do not share a property checked below
+		int sharedBlock = -1;
+		int sharedRow = -1;
+		int sharedCol = -1;
+		
+		if(areOnSameBox)
+		{
+			sharedBlock = triple.get(0).block();
+		}
+		
+		if(areOnSameRow)
+		{
+			sharedRow = triple.get(0).row();
+		}
+		
+		if(areOnSameCol)
+		{
+			sharedCol = triple.get(0).col();
+		}
+		
+		//a unit is a box, row, or col that the variable pair share in common... where we search for when removing values from the domain.
+		Set<Variable> unit = new HashSet<Variable>();
+		
+		for(Variable candidate : this.network.getNeighborsOfVariable(triple.get(0)))
+		{
+			if(candidate.isAssigned() || candidate == triple.get(0) || candidate == triple.get(1) || candidate == triple.get(2))
+				continue;
+			
+			if(areOnSameBox && sharedBlock == candidate.block())
+				unit.add(candidate);
+			else if(areOnSameRow && sharedRow == candidate.row())
+				unit.add(candidate);
+			else if(areOnSameCol && sharedCol == candidate.col())
+				unit.add(candidate);
+		}
+		
+		Integer[] tripletToMatch = new Integer[3];
+		tripletToMatch[0] = triple.get(0).Values().get(0);
+		tripletToMatch[1] = triple.get(1).Values().get(1);
+		tripletToMatch[2] = triple.get(2).Values().get(2);
+		//remove values from unit if candidate's domain contains any value in triple
+		for(Variable candidate : unit)
+		{
+			if(candidate.getDomain().contains(tripletToMatch[0]))
+				candidate.removeValueFromDomain(tripletToMatch[0]);
+			
+			if(candidate.getDomain().contains(tripletToMatch[1]))
+				candidate.removeValueFromDomain(tripletToMatch[1]);
+			
+			if(candidate.getDomain().contains(tripletToMatch[2]))
+				candidate.removeValueFromDomain(tripletToMatch[2]);
+			
+			if(candidate.getDomain().isEmpty())
+				return false;
+		}
 		
 		
 		
 		
-		
-		
-		
-		
-		return false;
-		
-		
+		return true;		
 	}
 	
 	
