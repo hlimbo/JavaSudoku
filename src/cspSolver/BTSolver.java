@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -728,40 +729,46 @@ public class BTSolver implements Runnable{
 	 */
 	private Variable getDegree()
 	{
-		Variable returnValue = null;
-		List<Variable> listOfVariables = this.network.getVariables();
-		for(Variable v: listOfVariables){
+		List<Variable> unassignedVariables = new ArrayList<Variable>();
+		
+		for(Variable v: this.network.getVariables()){
 			if(!v.isAssigned()){
-				returnValue = v;
+				unassignedVariables.add(v);
 			}
 		}
 		
-		if(returnValue == null){
+		if(unassignedVariables.isEmpty())
 			return null;
-		}
 		
-		for(Variable v: listOfVariables){
-			if(!v.isAssigned()){
-				List<Variable> neighbors = this.network.getNeighborsOfVariable(v);
-				int unassignedCount = 0;
-				//this gives us the size of the neighbors of v which are all unassigned
-				for(Variable v2: neighbors){
-					if(!v2.isAssigned())
-						++unassignedCount;
-				}
-				
-				List<Variable> neighborsOfReturnValue = this.network.getNeighborsOfVariable(returnValue);
-				int returnValueNeighborUnassignedCount = 0;
-				for(Variable v2: neighborsOfReturnValue){
-					if(!v2.isAssigned())
-						++returnValueNeighborUnassignedCount;
-				}
-				if(unassignedCount > returnValueNeighborUnassignedCount){
-					returnValue = v;
+		HashMap<Variable,Integer> map = new HashMap<Variable,Integer>();
+		for(Variable v : unassignedVariables){
+			map.put(v, 0);
+			for(Variable neighbor: this.network.getNeighborsOfVariable(v)){
+				if(!neighbor.isAssigned()){
+					map.put(v, map.get(v)+1);
 				}
 			}
 		}
-		return returnValue;
+		Variable max = null;
+		Iterator it = map.entrySet().iterator();
+//		while(it.hasNext()){
+//			Map.Entry<Variable, Integer> pair = (Map.Entry<Variable, Integer>)it.next();
+//			
+//			if(max == null)
+//				max = pair.getKey();
+//			else if(pair.getValue() > map.get(max)){
+//				max = pair.getKey();
+//			}
+//			//it.remove();
+//		}
+		for(Map.Entry<Variable, Integer> entry: map.entrySet()){
+			if(max == null)
+				max = entry.getKey();
+			else if(entry.getValue() > map.get(max)){
+				max = entry.getKey();
+			}
+		}
+		return max;
 	}
 	
 	/**
