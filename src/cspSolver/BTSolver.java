@@ -254,47 +254,47 @@ public class BTSolver implements Runnable{
 	 */
 	private boolean arcConsistency()
 	{
-		LinkedList<Pair> queue = new LinkedList<Pair>();
+		boolean changed = false;
+		Set<Pair> arcQueue = new HashSet<Pair>();
+		
 		for(Variable v: this.network.getVariables()){
-			for(Variable neighbor: this.network.getNeighborsOfVariable(v)){
-				queue.add(new Pair(v,neighbor));
-				queue.add(new Pair(neighbor,v));
+			for(Constraint c : this.network.getConstraintsContainingVariable(v)){
+				List<Variable> varsInConstraint = c.vars;
+				for(Variable v2: varsInConstraint){
+					
+						arcQueue.add(new Pair(v,v2));
+					
+				}
 			}
 		}
-	    while(!queue.isEmpty()){
-	    	Pair p = queue.remove();
-	    	if(RemoveInconsistentValues(p.getFirstValue(),p.getSecondValue())){
-	    		if(p.getFirstValue().getDomain().isEmpty()){
-	    			return false;
-	    		}
-	    		for(Variable v: this.network.getNeighborsOfVariable(p.getFirstValue())){
-	    			if(v != p.getSecondValue()){
-	    				queue.add(new Pair(v,p.getFirstValue()));
-	    			}
-	    		}
-	    	}
-	    }
-	    
-	    return true;
+		
+		
+		 LinkedList<Pair> arcQ = new LinkedList<Pair>();
+		    for (Pair p : arcQueue)
+		      arcQ.add(p);
+		    // core ac-3
+		    while (!arcQ.isEmpty()) {
+		      Pair p = arcQ.removeFirst();
+		      if (RemoveInconsistentValues(p.getFirstValue(), p.getSecondValue()) || RemoveInconsistentValues(p.getSecondValue(),p.getFirstValue())) {
+		        changed = true;
+		        arcQ.addLast(p);
+		      }
+		    }
+		    return changed;
 	}
 	
 	private boolean RemoveInconsistentValues(Variable first, Variable second){
-		boolean removed = false;
-		if( first.getDomain().isEmpty() || second.getDomain().isEmpty())
-			return false;
-		List<Integer> valuesInDomainToRemove = new ArrayList<Integer>();
-		for(Integer i : first.getDomain().getValues()){
-			if(second.getDomain().contains(i)){
-				valuesInDomainToRemove.add(i);
-				removed = true;
-			}
-		}
-		for(Integer i: valuesInDomainToRemove){
-			first.removeValueFromDomain(i);
-		}
-		
-		
-		return removed;
+		List<Integer> domainL = first.getDomain().getValues();
+	    List<Integer> domainR = second.getDomain().getValues();
+	    
+	    if (domainL.isEmpty() || domainR.isEmpty()) {
+	      return false;
+	    }
+	    int target = domainL.get(0);
+	    if (domainL.size()==1 && domainR.contains(target)){
+	      first.getDomain().getValues().remove(target);
+	      return true;
+	    } else return false;
 	}
 	
 	
