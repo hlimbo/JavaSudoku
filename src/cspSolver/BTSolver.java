@@ -866,36 +866,112 @@ public class BTSolver implements Runnable{
 	/**
 	 * TODO: Implement Degree heuristic
 	 * @return variable constrained by the most unassigned variables, null if all variables are assigned.
+	 * ~ A Constraint is a representation of a row, col, and box on a sudoku board.
+	 * ~ this.network.getConstraints() holds a list of variables that are in the same row, col, or box.
 	 */
 	private Variable getDegree()
 	{
+		
 		List<Variable> unassignedVariables = new ArrayList<Variable>();
-		Variable max = null;
-		int maxConstraintSize = -1;
-		for(Variable v: this.network.getVariables()){
-			if(!v.isAssigned()){
-				unassignedVariables.add(v);
+		List<Variable> variables = this.network.getVariables();
+				
+		for(Variable variable : variables)
+		{
+			if(!variable.isAssigned())
+				unassignedVariables.add(variable);
+		}
+		
+		if(unassignedVariables.isEmpty())
+			return null;
+		
+		List<Integer>  numConflictsList = new ArrayList<Integer>();
+		for(int i = 0;i < unassignedVariables.size();++i)
+			numConflictsList.add(0);
+	
+		List<Constraint> constraints = this.network.getConstraints();
+		for(int i = 0;i < unassignedVariables.size(); ++i)
+		{
+			Variable unassignedVariable = unassignedVariables.get(i);
+			
+			Integer rowConstraintIndex = unassignedVariable.row();
+			Integer colConstraintIndex = unassignedVariable.col() + this.sudokuGrid.getN();
+			Integer blockConstraintIndex = unassignedVariable.block() + (this.sudokuGrid.getN() * 2);
+			
+			Constraint rowConstraint = constraints.get(rowConstraintIndex);
+			Constraint colConstraint = constraints.get(colConstraintIndex);
+			Constraint blockConstraint = constraints.get(blockConstraintIndex);
+			
+			for(Variable var : rowConstraint.vars)
+			{
+				if(var == unassignedVariable)
+					continue;
+				
+				if(!var.isAssigned())
+					numConflictsList.set(i, numConflictsList.get(i) + 1);
+			}
+			
+			for(Variable var : colConstraint.vars)
+			{
+				if(var == unassignedVariable)
+					continue;
+				
+				if(!var.isAssigned())
+					numConflictsList.set(i, numConflictsList.get(i) + 1);
+			}
+			
+			for(Variable var : blockConstraint.vars)
+			{
+				if(var == unassignedVariable)
+					continue;
+				
+				if(!var.isAssigned())
+					numConflictsList.set(i, numConflictsList.get(i) + 1);
 			}
 		}
-		//we have a list of every unassigned variable
-		for(Variable v: unassignedVariables){
-				//this gives us a list of constraints the variable is constrained to we need to see how many of these values are not assigned
-				Set<Variable> s = new LinkedHashSet<>();
-				List<Constraint> test = this.network.getConstraintsContainingVariable(v);
-				for(Constraint c: test){
-					List<Variable> vars = c.vars; 
-					s.addAll(vars);
-				}
-				//all constrained variables of v are now in the set s we now need to get rid of V from it as well as any assigned values
-				s.remove(v);
-				s.removeIf(v1->v1.isAssigned());
-				
-				if(s.size() > maxConstraintSize){
-					max = v;
-					maxConstraintSize = s.size();
-				}
+		
+		Variable max = unassignedVariables.get(0);
+		Integer maxConflicts = numConflictsList.get(0);
+		for(int i = 1;i < unassignedVariables.size();++i)
+		{
+			Variable unassignedVariable = unassignedVariables.get(i);
+			Integer numConflicts = numConflictsList.get(i);
+			
+			if(maxConflicts < numConflicts)
+			{
+				max = unassignedVariable;
+				maxConflicts = numConflicts;
+			}
 		}
+		
 		return max;
+		
+//		List<Variable> unassignedVariables = new ArrayList<Variable>();
+//		Variable max = null;
+//		int maxConstraintSize = -1;
+//		for(Variable v: this.network.getVariables()){
+//			if(!v.isAssigned()){
+//				unassignedVariables.add(v);
+//			}
+//		}
+//		//we have a list of every unassigned variable
+//		for(Variable v: unassignedVariables){
+//				//this gives us a list of constraints the variable is constrained to we need to see how many of these values are not assigned
+//				Set<Variable> s = new LinkedHashSet<>();
+//				List<Constraint> test = this.network.getConstraintsContainingVariable(v);
+//				for(Constraint c: test){
+//					List<Variable> vars = c.vars; 
+//					s.addAll(vars);
+//				}
+//				//all constrained variables of v are now in the set s we now need to get rid of V from it as well as any assigned values
+//				s.remove(v);
+//				s.removeIf(v1->v1.isAssigned());
+//				
+//				if(s.size() > maxConstraintSize){
+//					max = v;
+//					maxConstraintSize = s.size();
+//				}
+//		}
+//		return max;
 	}
 	
 	/**

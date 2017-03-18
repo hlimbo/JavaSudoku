@@ -19,16 +19,16 @@ public class BTSolverExample {
 		
 		
 		
-		solver.setConsistencyChecks(ConsistencyCheck.ArcConsistency);
+		solver.setConsistencyChecks(ConsistencyCheck.None);
 		solver.setValueSelectionHeuristic(ValueSelectionHeuristic.None);
-		solver.setVariableSelectionHeuristic(VariableSelectionHeuristic.None);
+		solver.setVariableSelectionHeuristic(VariableSelectionHeuristic.Degree);
 		solver.setNakedConsistency(NakedCheck.None);
 		
 		Thread t1 = new Thread(solver);
 		try
 		{
 			t1.start();
-			t1.join(60000);
+			t1.join(300000);//t1.join(60000);
 			if(t1.isAlive())
 			{
 				t1.interrupt();
