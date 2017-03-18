@@ -261,9 +261,9 @@ public class BTSolver implements Runnable{
 			for(Constraint c : this.network.getConstraintsContainingVariable(v)){
 				List<Variable> varsInConstraint = c.vars;
 				for(Variable v2: varsInConstraint){
-					
+					if(v != v2){
 						arcQueue.add(new Pair(v,v2));
-					
+					}
 				}
 			}
 		}

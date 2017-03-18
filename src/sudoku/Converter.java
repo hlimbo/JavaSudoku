@@ -119,11 +119,11 @@ public class Converter {
 		int row = 0, col = 0;
 		for(Variable v : cn.getVariables())
 		{
-			board[row++][col] = v.getAssignment();
-			if(row == n)
+			board[row][col++] = v.getAssignment();
+			if(col == n)
 			{
-				row = 0;
-				col++;
+				col = 0;
+				row++;
 			}
 		}
 		sf.setBoard(board);
