@@ -1,3 +1,8 @@
+//Harvey Limbo
+//ID: 60695655
+//Russell Fenenga
+//ID: 70116153
+
 package cspSolver;
 import helper.MapUtil;
 import java.util.ArrayList;
@@ -222,7 +227,6 @@ public class BTSolver implements Runnable{
 		
 		for(Variable assignedVariable : assignedVariables)
 		{
-			
 			List<Variable> assignedVariableNeighbors = this.network.getNeighborsOfVariable(assignedVariable);
 			for(Variable neighbor : assignedVariableNeighbors)
 			{
@@ -253,48 +257,67 @@ public class BTSolver implements Runnable{
 	 * TODO: Implement Maintaining Arc Consistency.
 	 */
 	private boolean arcConsistency()
-	{
-		boolean changed = false;
-		Set<Pair> arcQueue = new HashSet<Pair>();
-		
-		for(Variable v: this.network.getVariables()){
-			for(Constraint c : this.network.getConstraintsContainingVariable(v)){
-				List<Variable> varsInConstraint = c.vars;
-				for(Variable v2: varsInConstraint){
-					if(v != v2){
-						arcQueue.add(new Pair(v,v2));
-					}
+	{		
+		LinkedList<Pair> arcQ = new LinkedList<Pair>();
+		for(Variable v : this.network.getVariables())
+		{
+			for(Constraint c : this.network.getConstraintsContainingVariable(v))
+			{
+				for(Variable v2 : c.vars)
+				{
+					if(v != v2)
+						arcQ.addLast(new Pair(v,v2));
 				}
 			}
 		}
 		
+		while(!arcQ.isEmpty())
+		{
+			Pair p = arcQ.removeFirst();
+			if(RemoveInconsistentValues(p.getFirstValue(), p.getSecondValue()))
+			{
+				if(p.getFirstValue().getDomain().isEmpty() || p.getSecondValue().getDomain().isEmpty())
+				{
+					return false;
+				}
+				arcQ.addLast(p);
+			}
+		}
 		
-		 LinkedList<Pair> arcQ = new LinkedList<Pair>();
-		    for (Pair p : arcQueue)
-		      arcQ.add(p);
-		    // core ac-3
-		    while (!arcQ.isEmpty()) {
-		      Pair p = arcQ.removeFirst();
-		      if (RemoveInconsistentValues(p.getFirstValue(), p.getSecondValue()) || RemoveInconsistentValues(p.getSecondValue(),p.getFirstValue())) {
-		        changed = true;
-		        arcQ.addLast(p);
-		      }
-		    }
-		    return changed;
+		return true;
 	}
 	
 	private boolean RemoveInconsistentValues(Variable first, Variable second){
-		List<Integer> domainL = first.getDomain().getValues();
-	    List<Integer> domainR = second.getDomain().getValues();
-	    
-	    if (domainL.isEmpty() || domainR.isEmpty()) {
-	      return false;
-	    }
-	    int target = domainL.get(0);
-	    if (domainL.size()==1 && domainR.contains(target)){
-	      first.getDomain().getValues().remove(target);
-	      return true;
-	    } else return false;
+		
+		if(first.getDomain().isEmpty() || second.getDomain().isEmpty())
+			return false;
+		
+		if(first.isAssigned() && second.isAssigned())
+		{
+			if(first.getAssignment().equals(second.getAssignment()))
+			{
+				first.removeValueFromDomain(second.getAssignment());
+				return true;
+			}
+		}
+		else if (first.isAssigned())
+		{
+			return false;
+		}
+		else if(second.isAssigned())
+		{
+			if(first.getDomain().contains(second.getAssignment()))
+			{
+				first.removeValueFromDomain(second.getAssignment());
+				return true;
+			}
+			else
+			{
+				return false;
+			}
+		}
+		
+		return false;
 	}
 	
 	
@@ -871,107 +894,33 @@ public class BTSolver implements Runnable{
 	 */
 	private Variable getDegree()
 	{
-		
 		List<Variable> unassignedVariables = new ArrayList<Variable>();
-		List<Variable> variables = this.network.getVariables();
-				
-		for(Variable variable : variables)
-		{
-			if(!variable.isAssigned())
-				unassignedVariables.add(variable);
-		}
-		
-		if(unassignedVariables.isEmpty())
-			return null;
-		
-		List<Integer>  numConflictsList = new ArrayList<Integer>();
-		for(int i = 0;i < unassignedVariables.size();++i)
-			numConflictsList.add(0);
-	
-		List<Constraint> constraints = this.network.getConstraints();
-		for(int i = 0;i < unassignedVariables.size(); ++i)
-		{
-			Variable unassignedVariable = unassignedVariables.get(i);
-			
-			Integer rowConstraintIndex = unassignedVariable.row();
-			Integer colConstraintIndex = unassignedVariable.col() + this.sudokuGrid.getN();
-			Integer blockConstraintIndex = unassignedVariable.block() + (this.sudokuGrid.getN() * 2);
-			
-			Constraint rowConstraint = constraints.get(rowConstraintIndex);
-			Constraint colConstraint = constraints.get(colConstraintIndex);
-			Constraint blockConstraint = constraints.get(blockConstraintIndex);
-			
-			for(Variable var : rowConstraint.vars)
-			{
-				if(var == unassignedVariable)
-					continue;
-				
-				if(!var.isAssigned())
-					numConflictsList.set(i, numConflictsList.get(i) + 1);
-			}
-			
-			for(Variable var : colConstraint.vars)
-			{
-				if(var == unassignedVariable)
-					continue;
-				
-				if(!var.isAssigned())
-					numConflictsList.set(i, numConflictsList.get(i) + 1);
-			}
-			
-			for(Variable var : blockConstraint.vars)
-			{
-				if(var == unassignedVariable)
-					continue;
-				
-				if(!var.isAssigned())
-					numConflictsList.set(i, numConflictsList.get(i) + 1);
+		Variable max = null;
+		int maxConstraintSize = -1;
+		for(Variable v: this.network.getVariables()){
+			if(!v.isAssigned()){
+				unassignedVariables.add(v);
 			}
 		}
-		
-		Variable max = unassignedVariables.get(0);
-		Integer maxConflicts = numConflictsList.get(0);
-		for(int i = 1;i < unassignedVariables.size();++i)
-		{
-			Variable unassignedVariable = unassignedVariables.get(i);
-			Integer numConflicts = numConflictsList.get(i);
-			
-			if(maxConflicts < numConflicts)
-			{
-				max = unassignedVariable;
-				maxConflicts = numConflicts;
-			}
+		//we have a list of every unassigned variable
+		for(Variable v: unassignedVariables){
+				//this gives us a list of constraints the variable is constrained to we need to see how many of these values are not assigned
+				Set<Variable> s = new LinkedHashSet<>();
+				List<Constraint> test = this.network.getConstraintsContainingVariable(v);
+				for(Constraint c: test){
+					List<Variable> vars = c.vars; 
+					s.addAll(vars);
+				}
+				//all constrained variables of v are now in the set s we now need to get rid of V from it as well as any assigned values
+				s.remove(v);
+				s.removeIf(v1->v1.isAssigned());
+				
+				if(s.size() > maxConstraintSize){
+					max = v;
+					maxConstraintSize = s.size();
+				}
 		}
-		
 		return max;
-		
-//		List<Variable> unassignedVariables = new ArrayList<Variable>();
-//		Variable max = null;
-//		int maxConstraintSize = -1;
-//		for(Variable v: this.network.getVariables()){
-//			if(!v.isAssigned()){
-//				unassignedVariables.add(v);
-//			}
-//		}
-//		//we have a list of every unassigned variable
-//		for(Variable v: unassignedVariables){
-//				//this gives us a list of constraints the variable is constrained to we need to see how many of these values are not assigned
-//				Set<Variable> s = new LinkedHashSet<>();
-//				List<Constraint> test = this.network.getConstraintsContainingVariable(v);
-//				for(Constraint c: test){
-//					List<Variable> vars = c.vars; 
-//					s.addAll(vars);
-//				}
-//				//all constrained variables of v are now in the set s we now need to get rid of V from it as well as any assigned values
-//				s.remove(v);
-//				s.removeIf(v1->v1.isAssigned());
-//				
-//				if(s.size() > maxConstraintSize){
-//					max = v;
-//					maxConstraintSize = s.size();
-//				}
-//		}
-//		return max;
 	}
 	
 	/**
@@ -1025,16 +974,6 @@ public class BTSolver implements Runnable{
 		
 		List<Variable> neighbors = this.network.getNeighborsOfVariable(v);
 		List<Integer> values = v.getDomain().getValues();
-		
-		//only check unassigned neighbors.  ~ this seems to increase the number of assignments and backtracks by a constant factor.. Tested on PM1.txt
-//		List<Variable> unassigned_neighbors = new ArrayList<Variable>();
-//		for(Variable neighbor : neighbors)
-//		{
-//			if(!neighbor.isAssigned())
-//			{
-//				unassigned_neighbors.add(neighbor);
-//			}
-//		}
 		
 		//the sum of all conflicts that occurred per value available in the selected variable's domain.
 		List<Integer> conflictSums = new ArrayList<Integer>();
@@ -1142,7 +1081,7 @@ public class BTSolver implements Runnable{
 			for(Integer i : getNextValues(v))
 			{
 				trail.placeBreadCrumb();
-
+				
 				//check a value
 				v.updateDomain(new Domain(i));
 				numAssignments++;

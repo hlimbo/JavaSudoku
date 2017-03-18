@@ -14,11 +14,11 @@ public class BTSolverExample {
 	public static void main(String[] args)
 	{
 		//SudokuFile sf = SudokuBoardGenerator.generateBoard(9, 3, 3, 12);
-		SudokuFile SudokuFileFromFile = SudokuBoardReader.readFile("ExampleSudokuFiles/PE1.txt");
+		SudokuFile SudokuFileFromFile = SudokuBoardReader.readFile("ExampleSudokuFiles/PH3.txt");
 		BTSolver solver = new BTSolver(SudokuFileFromFile);
 		
 		
-		solver.setConsistencyChecks(ConsistencyCheck.ForwardChecking);
+		solver.setConsistencyChecks(ConsistencyCheck.ArcConsistency);
 		solver.setValueSelectionHeuristic(ValueSelectionHeuristic.LeastConstrainingValue);
 		solver.setVariableSelectionHeuristic(VariableSelectionHeuristic.MinimumRemainingValue);
 		solver.setNakedConsistency(NakedCheck.NakedTriples);
